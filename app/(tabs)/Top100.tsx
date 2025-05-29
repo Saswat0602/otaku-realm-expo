@@ -2,17 +2,14 @@ import animeTop from '@/data/top100';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-
-const { width } = Dimensions.get('window');
 
 const Top100 = () => {
   return (
@@ -24,13 +21,6 @@ const Top100 = () => {
         colors={['#0F0F23', '#1A1A3E', '#2D1B69']}
         style={StyleSheet.absoluteFillObject}
       />
-      
-      {/* Floating Orbs Background */}
-      <View style={styles.orbContainer}>
-        <View style={[styles.orb, styles.orb1]} />
-        <View style={[styles.orb, styles.orb2]} />
-        <View style={[styles.orb, styles.orb3]} />
-      </View>
 
       {/* Header with Glassmorphism */}
       <View style={styles.headerContainer}>
@@ -42,7 +32,7 @@ const Top100 = () => {
             <Text style={styles.headerEmoji}>🏆</Text>
             <View>
               <Text style={styles.headerText}>Top 100 Anime</Text>
-              <Text style={styles.subText}>Greatest of all time</Text>
+              <Text style={styles.subText}>All Time Greatest</Text>
             </View>
           </View>
         </LinearGradient>
@@ -62,7 +52,7 @@ const Top100 = () => {
               >
                 <View style={styles.rankContainer}>
                   <LinearGradient
-                    colors={['#FFD700', '#FFA500']}
+                    colors={index < 3 ? ['#FFD700', '#FFA500'] : ['#667eea', '#764ba2']}
                     style={styles.rankBadge}
                   >
                     <Text style={styles.rankNumber}>#{index + 1}</Text>
@@ -72,18 +62,23 @@ const Top100 = () => {
                 <View style={styles.imageContainer}>
                   <Image source={{ uri: anime.image }} style={styles.image} />
                   <View style={styles.imageOverlay} />
-                  <View style={styles.ratingBadge}>
-                    <Text style={styles.ratingText}>⭐ {anime.rating}</Text>
-                  </View>
+                  {index < 10 && (
+                    <View style={styles.topBadge}>
+                      <Text style={styles.topText}>🏆 TOP</Text>
+                    </View>
+                  )}
                 </View>
                 
                 <View style={styles.textWrapper}>
                   <Text style={styles.title} numberOfLines={2}>{anime.title}</Text>
                   <Text style={styles.genre}>{anime.genre}</Text>
                   <View style={styles.statsContainer}>
-                    <View style={styles.scoreIndicator}>
-                      <View style={styles.scoreBar} />
-                      <Text style={styles.scoreText}>Top Rated</Text>
+                    <View style={styles.ratingContainer}>
+                      <Text style={styles.rating}>⭐ {anime.rating}</Text>
+                    </View>
+                    <View style={styles.legendIndicator}>
+                      <View style={styles.legendBar} />
+                      <Text style={styles.legendText}>Legend</Text>
                     </View>
                   </View>
                 </View>
@@ -95,6 +90,7 @@ const Top100 = () => {
             </TouchableOpacity>
           ))}
         </View>
+        
         <View style={{ height: 60 }} />
       </ScrollView>
     </View>
@@ -108,85 +104,62 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F0F23',
   },
-  orbContainer: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden',
-  },
-  orb: {
-    position: 'absolute',
-    borderRadius: 1000,
-    opacity: 0.1,
-  },
-  orb1: {
-    width: 300,
-    height: 300,
-    backgroundColor: '#FFD700',
-    top: -100,
-    right: -100,
-  },
-  orb2: {
-    width: 200,
-    height: 200,
-    backgroundColor: '#FFA500',
-    bottom: -50,
-    left: -50,
-  },
-  orb3: {
-    width: 150,
-    height: 150,
-    backgroundColor: '#FF6B6B',
-    top: '50%',
-    right: -50,
-  },
-  headerContainer: {
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-  },
-  glassHeader: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    padding: 20,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerEmoji: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  headerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  subText: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 4,
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingBottom: 20,
   },
+  headerContainer: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  glassHeader: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    backdropFilter: 'blur(20px)',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+  },
+  headerEmoji: {
+    fontSize: 32,
+    marginRight: 16,
+  },
+  headerText: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  subText: {
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
+    fontSize: 14,
+    fontWeight: '500',
+  },
   listWrapper: {
     paddingHorizontal: 20,
+    paddingTop: 32,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
     backgroundColor: 'rgba(255,255,255,0.03)',
+    overflow: 'hidden',
   },
   rankContainer: {
-    marginRight: 12,
+    marginRight: 16,
   },
   rankBadge: {
     width: 40,
@@ -194,20 +167,26 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   rankNumber: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   imageContainer: {
     position: 'relative',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
+    marginRight: 16,
   },
   image: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 120,
     resizeMode: 'cover',
   },
   imageOverlay: {
@@ -216,60 +195,77 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.15)',
   },
-  ratingBadge: {
+  topBadge: {
     position: 'absolute',
     top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    left: 8,
+    backgroundColor: 'rgba(255,215,0,0.9)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backdropFilter: 'blur(10px)',
   },
-  ratingText: {
-    color: '#FFD700',
-    fontSize: 12,
-    fontWeight: '600',
+  topText: {
+    color: '#000000',
+    fontSize: 10,
+    fontWeight: '700',
   },
   textWrapper: {
     flex: 1,
-    paddingHorizontal: 16,
     justifyContent: 'center',
   },
   title: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
+    lineHeight: 24,
     marginBottom: 4,
   },
   genre: {
-    fontSize: 13,
+    fontSize: 14,
     color: 'rgba(255,255,255,0.6)',
-    marginBottom: 8,
+    marginBottom: 12,
+    fontWeight: '500',
   },
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  scoreIndicator: {
+  ratingContainer: {
+    backgroundColor: 'rgba(255,215,0,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.2)',
+  },
+  rating: {
+    fontSize: 12,
+    color: '#FFD700',
+    fontWeight: '600',
+  },
+  legendIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  scoreBar: {
-    width: 24,
+  legendBar: {
+    width: 20,
     height: 3,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#667eea',
     borderRadius: 2,
     marginRight: 6,
   },
-  scoreText: {
+  legendText: {
     fontSize: 11,
-    color: '#FFD700',
+    color: '#667eea',
     fontWeight: '600',
   },
   chevron: {
     padding: 8,
+    marginLeft: 8,
   },
   chevronText: {
     fontSize: 20,
