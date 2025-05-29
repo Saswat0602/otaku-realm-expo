@@ -8,16 +8,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
 
 const { width } = Dimensions.get("window");
 
-
-
 export default function HomeScreen() {
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <LinearGradient
         colors={["#7F00FF", "#E100FF"]}
         style={styles.header}
@@ -28,62 +26,67 @@ export default function HomeScreen() {
         </Text>
       </LinearGradient>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🔥 Popular Anime</Text>
-        <FlatList
-          data={homeAnimeData}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Image source={{ uri: item.image }} style={styles.image} />
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardSubtitle}>
-                🎬 {item.episodes} eps | ⭐ {item.rating}
-              </Text>
-            </View>
-          )}
-        />
-      </View>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={true}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🔥 Popular Anime</Text>
+          <FlatList
+            data={homeAnimeData}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.listContainer}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Image source={{ uri: item.image }} style={styles.image} />
+                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardSubtitle}>
+                  🎬 {item.episodes} eps | ⭐ {item.rating}
+                </Text>
+              </View>
+            )}
+          />
+        </View>
 
-      {/* Top Rated Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🌟 Top Rated</Text>
-        {homeAnimeData.map((anime) => (
-          <View key={anime.id} style={styles.topRatedCard}>
-            <Image source={{ uri: anime.image }} style={styles.topRatedImage} />
-            <View style={styles.topRatedInfo}>
-              <Text style={styles.cardTitle}>{anime.title}</Text>
-              <Text style={styles.cardSubtitle}>
-                {anime.episodes} episodes • {anime.rating}⭐
-              </Text>
+        {/* Top Rated Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🌟 Top Rated</Text>
+          {homeAnimeData.map((anime) => (
+            <View key={anime.id} style={styles.topRatedCard}>
+              <Image source={{ uri: anime.image }} style={styles.topRatedImage} />
+              <View style={styles.topRatedInfo}>
+                <Text style={styles.cardTitle}>{anime.title}</Text>
+                <Text style={styles.cardSubtitle}>
+                  {anime.episodes} episodes • {anime.rating}⭐
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
 
-      {/* Footer Banner */}
-      <View style={styles.footerBanner}>
-        <Image
-          source={{ uri: "https://www.wallpaperflare.com/static/966/883/723/anime-universe-wallpaper.jpg" }}
-          style={styles.bannerImage}
-        />
-        <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.7)"]}
-          style={styles.bannerOverlay}
-        >
-          <Text style={styles.bannerText}>Join the Anime Universe 🌌</Text>
-        </LinearGradient>
-      </View>
-    </ScrollView>
+        {/* Footer Banner */}
+        <View style={styles.footerBanner}>
+          <Image
+            source={{ uri: "https://www.wallpaperflare.com/static/966/883/723/anime-universe-wallpaper.jpg" }}
+            style={styles.bannerImage}
+          />
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.7)"]}
+            style={styles.bannerOverlay}
+          >
+            <Text style={styles.bannerText}>Join the Anime Universe 🌌</Text>
+          </LinearGradient>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: "#F9FAFB",
+  },
+  scrollView: {
     flex: 1,
   },
   header: {
@@ -91,6 +94,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
+    // position: 'relative', // Remove absolute
+    // Remove top, left, right, zIndex
   },
   headerText: {
     color: "#fff",

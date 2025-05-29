@@ -9,11 +9,11 @@ import {
   View
 } from 'react-native';
 
-
+const HEADER_HEIGHT = 100;
 
 const Top100 = () => {
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <LinearGradient
         colors={['#667eea', '#764ba2']}
         style={styles.header}
@@ -22,22 +22,23 @@ const Top100 = () => {
         <Text style={styles.subText}>Based on global fan ratings</Text>
       </LinearGradient>
 
-      <View style={styles.listWrapper}>
-        {animeTop.map((anime, index) => (
-          <View key={anime.id} style={styles.card}>
-            <Image source={{ uri: anime.image }} style={styles.image} />
-            <View style={styles.textWrapper}>
-              <Text style={styles.rank}>#{index + 1}</Text>
-              <Text style={styles.title}>{anime.title}</Text>
-              <Text style={styles.genre}>{anime.genre}</Text>
-              <Text style={styles.rating}>⭐ {anime.rating}</Text>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={true}>
+        <View style={styles.listWrapper}>
+          {animeTop.map((anime, index) => (
+            <View key={anime.id} style={styles.card}>
+              <Image source={{ uri: anime.image }} style={styles.image} />
+              <View style={styles.textWrapper}>
+                <Text style={styles.rank}>#{index + 1}</Text>
+                <Text style={styles.title}>{anime.title}</Text>
+                <Text style={styles.genre}>{anime.genre}</Text>
+                <Text style={styles.rating}>⭐ {anime.rating}</Text>
+              </View>
             </View>
-          </View>
-        ))}
-      </View>
-
-      <View style={{ height: 40 }} />
-    </ScrollView>
+          ))}
+        </View>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   );
 };
 
@@ -47,6 +48,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     paddingTop: 50,

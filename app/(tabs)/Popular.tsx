@@ -13,11 +13,9 @@ import {
 
 const { width } = Dimensions.get('window')
 
-
-
 const Popular = () => {
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <LinearGradient
         colors={['#ff4e50', '#f9d423']}
         style={styles.header}
@@ -26,42 +24,44 @@ const Popular = () => {
         <Text style={styles.subText}>The most legendary series of all time</Text>
       </LinearGradient>
 
-      {/* Horizontal list */}
-      <View style={styles.section}>
-        <FlatList
-          data={animeList}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Image source={{ uri: item.image }} style={styles.image} />
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardSubtitle}>
-                🎬 {item.episodes} eps | ⭐ {item.rating}
-              </Text>
-            </View>
-          )}
-        />
-      </View>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={true}>
+        {/* Horizontal list */}
+        <View style={styles.section}>
+          <FlatList
+            data={animeList}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.listContainer}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Image source={{ uri: item.image }} style={styles.image} />
+                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardSubtitle}>
+                  🎬 {item.episodes} eps | ⭐ {item.rating}
+                </Text>
+              </View>
+            )}
+          />
+        </View>
 
-      {/* Vertical list: Fan Favorites */}
-      <View style={styles.verticalSection}>
-        <Text style={styles.fanTitle}>💖 Fan Favorites</Text>
-        {fanFavorites.map((anime) => (
-          <View key={anime.id} style={styles.verticalCard}>
-            <Image source={{ uri: anime.image }} style={styles.verticalImage} />
-            <View style={styles.verticalTextContainer}>
-              <Text style={styles.verticalTitle}>{anime.title}</Text>
-              <Text style={styles.verticalGenre}>{anime.genre}</Text>
+        {/* Vertical list: Fan Favorites */}
+        <View style={styles.verticalSection}>
+          <Text style={styles.fanTitle}>💖 Fan Favorites</Text>
+          {fanFavorites.map((anime) => (
+            <View key={anime.id} style={styles.verticalCard}>
+              <Image source={{ uri: anime.image }} style={styles.verticalImage} />
+              <View style={styles.verticalTextContainer}>
+                <Text style={styles.verticalTitle}>{anime.title}</Text>
+                <Text style={styles.verticalGenre}>{anime.genre}</Text>
+              </View>
             </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   )
 }
 
@@ -71,6 +71,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     paddingTop: 50,
