@@ -6,8 +6,10 @@ import {
   FlatList,
   Image,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native'
 
@@ -16,17 +18,51 @@ const { width } = Dimensions.get('window')
 const Popular = () => {
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      
+      {/* Animated Background */}
       <LinearGradient
-        colors={['#ff4e50', '#f9d423']}
-        style={styles.header}
-      >
-        <Text style={styles.headerText}>🔥 Popular Anime</Text>
-        <Text style={styles.subText}>The most legendary series of all time</Text>
-      </LinearGradient>
+        colors={['#0F0F23', '#1A1A3E', '#2D1B69']}
+        style={StyleSheet.absoluteFillObject}
+      />
+      
+      {/* Floating Orbs Background */}
+      <View style={styles.orbContainer}>
+        <View style={[styles.orb, styles.orb1]} />
+        <View style={[styles.orb, styles.orb2]} />
+        <View style={[styles.orb, styles.orb3]} />
+      </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={true}>
-        {/* Horizontal list */}
+      {/* Header with Glassmorphism */}
+      <View style={styles.headerContainer}>
+        <LinearGradient
+          colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
+          style={styles.glassHeader}
+        >
+          <View style={styles.headerContent}>
+            <Text style={styles.headerEmoji}>🔥</Text>
+            <View>
+              <Text style={styles.headerText}>Popular Anime</Text>
+              <Text style={styles.subText}>Trending masterpieces</Text>
+            </View>
+          </View>
+        </LinearGradient>
+      </View>
+
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Featured Section */}
         <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>✨ Featured</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAll}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          
           <FlatList
             data={animeList}
             keyExtractor={(item) => item.id}
@@ -34,32 +70,71 @@ const Popular = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.listContainer}
             renderItem={({ item }) => (
-              <View style={styles.card}>
-                <Image source={{ uri: item.image }} style={styles.image} />
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardSubtitle}>
-                  🎬 {item.episodes} eps | ⭐ {item.rating}
-                </Text>
-              </View>
+              <TouchableOpacity style={styles.card} activeOpacity={0.8}>
+                <View style={styles.imageContainer}>
+                  <Image source={{ uri: item.image }} style={styles.image} />
+                  <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.8)']}
+                    style={styles.imageOverlay}
+                  />
+                  <View style={styles.ratingBadge}>
+                    <Text style={styles.ratingText}>⭐ {item.rating}</Text>
+                  </View>
+                </View>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+                  <View style={styles.cardStats}>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statLabel}>🎬 {item.episodes} eps</Text>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
             )}
           />
         </View>
 
-        {/* Vertical list: Fan Favorites */}
+        {/* Fan Favorites Section */}
         <View style={styles.verticalSection}>
-          <Text style={styles.fanTitle}>💖 Fan Favorites</Text>
-          {fanFavorites.map((anime) => (
-            <View key={anime.id} style={styles.verticalCard}>
-              <Image source={{ uri: anime.image }} style={styles.verticalImage} />
-              <View style={styles.verticalTextContainer}>
-                <Text style={styles.verticalTitle}>{anime.title}</Text>
-                <Text style={styles.verticalGenre}>{anime.genre}</Text>
-              </View>
-            </View>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>💖 Fan Favorites</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAll}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {fanFavorites.map((anime, index) => (
+            <TouchableOpacity key={anime.id} activeOpacity={0.9}>
+              <LinearGradient
+                colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)']}
+                style={[styles.verticalCard, { 
+                  marginTop: index === 0 ? 0 : 16,
+                  transform: [{ scale: 1 }] 
+                }]}
+              >
+                <View style={styles.verticalImageContainer}>
+                  <Image source={{ uri: anime.image }} style={styles.verticalImage} />
+                  <View style={styles.verticalImageOverlay} />
+                </View>
+                <View style={styles.verticalTextContainer}>
+                  <Text style={styles.verticalTitle} numberOfLines={1}>{anime.title}</Text>
+                  <Text style={styles.verticalGenre}>{anime.genre}</Text>
+                  <View style={styles.verticalStats}>
+                    <View style={styles.popularityIndicator}>
+                      <View style={styles.popularityBar} />
+                      <Text style={styles.popularityText}>Trending</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.chevron}>
+                  <Text style={styles.chevronText}>›</Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
           ))}
         </View>
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: 60 }} />
       </ScrollView>
     </View>
   )
@@ -70,102 +145,238 @@ export default Popular
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#0F0F23',
+  },
+  orbContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  orb: {
+    position: 'absolute',
+    borderRadius: 100,
+    opacity: 0.3,
+  },
+  orb1: {
+    width: 200,
+    height: 200,
+    backgroundColor: '#FF6B6B',
+    top: -100,
+    right: -100,
+  },
+  orb2: {
+    width: 150,
+    height: 150,
+    backgroundColor: '#4ECDC4',
+    top: 200,
+    left: -75,
+  },
+  orb3: {
+    width: 120,
+    height: 120,
+    backgroundColor: '#45B7D1',
+    bottom: 100,
+    right: -60,
   },
   scrollView: {
     flex: 1,
   },
-  header: {
-    paddingTop: 50,
-    paddingBottom: 30,
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  headerContainer: {
+    paddingTop: 60,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingBottom: 20,
+  },
+  glassHeader: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    backdropFilter: 'blur(20px)',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+  },
+  headerEmoji: {
+    fontSize: 32,
+    marginRight: 16,
   },
   headerText: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
   },
   subText: {
-    color: '#fff',
-    marginTop: 6,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
     fontSize: 14,
+    fontWeight: '500',
   },
   section: {
-    marginTop: 24,
-    paddingLeft: 16,
+    marginTop: 32,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  seeAll: {
+    fontSize: 14,
+    color: '#4ECDC4',
+    fontWeight: '600',
   },
   listContainer: {
-    paddingRight: 16,
+    paddingLeft: 20,
+    paddingRight: 20,
   },
   card: {
-    width: width * 0.6,
+    width: width * 0.65,
     marginRight: 16,
-    backgroundColor: '#fff',
-    borderRadius: 14,
+    borderRadius: 20,
     overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  imageContainer: {
+    position: 'relative',
   },
   image: {
     width: '100%',
-    height: 160,
+    height: 200,
     resizeMode: 'cover',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backdropFilter: 'blur(10px)',
+  },
+  ratingText: {
+    color: '#FFD700',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cardContent: {
+    padding: 16,
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    paddingHorizontal: 10,
-    paddingTop: 8,
-    color: '#1F2937',
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 22,
   },
-  cardSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    paddingHorizontal: 10,
-    paddingBottom: 10,
-    paddingTop: 4,
+  cardStats: {
+    marginTop: 8,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+    fontWeight: '500',
   },
   verticalSection: {
-    marginTop: 32,
-    paddingHorizontal: 16,
-  },
-  fanTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 12,
+    marginTop: 40,
+    paddingHorizontal: 20,
   },
   verticalCard: {
     flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  verticalImageContainer: {
+    position: 'relative',
     borderRadius: 12,
-    marginBottom: 16,
     overflow: 'hidden',
-    elevation: 2,
   },
   verticalImage: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
     resizeMode: 'cover',
+  },
+  verticalImageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
   verticalTextContainer: {
     flex: 1,
-    padding: 10,
+    paddingHorizontal: 16,
     justifyContent: 'center',
   },
   verticalTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   verticalGenre: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 4,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  verticalStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  popularityIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  popularityBar: {
+    width: 24,
+    height: 3,
+    backgroundColor: '#4ECDC4',
+    borderRadius: 2,
+    marginRight: 6,
+  },
+  popularityText: {
+    fontSize: 11,
+    color: '#4ECDC4',
+    fontWeight: '600',
+  },
+  chevron: {
+    padding: 8,
+  },
+  chevronText: {
+    fontSize: 20,
+    color: 'rgba(255,255,255,0.3)',
+    fontWeight: '300',
   },
 })
