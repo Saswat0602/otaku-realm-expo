@@ -27,11 +27,11 @@ const Popular = () => {
       />
       
       {/* Floating Orbs Background */}
-      <View style={styles.orbContainer}>
+      {/* <View style={styles.orbContainer}>
         <View style={[styles.orb, styles.orb1]} />
         <View style={[styles.orb, styles.orb2]} />
         <View style={[styles.orb, styles.orb3]} />
-      </View>
+      </View> */}
 
       {/* Header with Glassmorphism */}
       <View style={styles.headerContainer}>
