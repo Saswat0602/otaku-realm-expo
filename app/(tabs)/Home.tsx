@@ -1,166 +1,252 @@
-import homeAnimeData from "@/data/home";
-import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import { useGetTrendingAnimeQuery } from '@/redux/api';
+import type { Anime } from '@/types/types';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
-  ScrollView,
+  RefreshControl,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
+
+// Skeleton Card Component
+const SkeletonCard = () => (
+  <View style={styles.card}>
+    <View style={styles.skeletonImageContainer}>
+      <LinearGradient
+        colors={['#2a2a3a', '#3a3a4a', '#2a2a3a']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.skeletonImage}
+      />
+    </View>
+    <View style={styles.cardContent}>
+      <View style={styles.skeletonTextContainer}>
+        <LinearGradient
+          colors={['#2a2a3a', '#3a3a4a', '#2a2a3a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.skeletonText, { width: '80%' }]}
+        />
+        <LinearGradient
+          colors={['#2a2a3a', '#3a3a4a', '#2a2a3a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.skeletonText, { width: '60%', marginTop: 8 }]}
+        />
+      </View>
+    </View>
+  </View>
+);
+
+// Loading Footer Component
+const LoadingFooter = () => (
+  <View style={styles.loadingFooter}>
+    <ActivityIndicator size="large" color="#6C5CE7" />
+    <Text style={styles.loadingFooterText}>Loading more anime...</Text>
+  </View>
+);
 
 export default function HomeScreen() {
+  const [page, setPage] = useState(1);
+  const [allAnime, setAllAnime] = useState<Anime[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  
+  const { data, error, isLoading, isFetching, refetch } = useGetTrendingAnimeQuery({ page });
+
+  // Update anime list when new data arrives
+  React.useEffect(() => {
+    if (data?.data) {
+      if (page === 1) {
+        setAllAnime(data.data);
+      } else {
+        setAllAnime(prev => [...prev, ...data.data]);
+      }
+      setHasNextPage(data.pagination?.hasNextPage || false);
+    }
+  }, [data, page]);
+
+  const onRefresh = useCallback(() => {
+    setPage(1);
+    setAllAnime([]);
+    refetch();
+  }, [refetch]);
+
+  const loadMore = useCallback(() => {
+    if (!isFetching && hasNextPage) {
+      setPage(prev => prev + 1);
+    }
+  }, [isFetching, hasNextPage]);
+
+  const renderAnimeCard = useCallback(({ item }: { item: Anime }) => (
+    <TouchableOpacity style={styles.card} activeOpacity={0.9}>
+      <View style={styles.imageContainer}>
+        <Image 
+          source={{ uri: item.images?.jpg?.large_image_url  }} 
+          style={styles.image} 
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.9)']}
+          style={styles.imageOverlay}
+        />
+        
+        {/* Rating Badge */}
+        <BlurView intensity={20} tint="dark" style={styles.ratingBadge}>
+          <Text style={styles.ratingText}>
+            ⭐ {item.rating || item.score || 'N/A'}
+          </Text>
+        </BlurView>
+
+        {/* Status Badge */}
+        {item.status && (
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.statusText}>{item.status}</Text>
+          </View>
+        )}
+      </View>
+      
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {item.title || item.title_english}
+        </Text>
+        
+        <View style={styles.statsRow}>
+          <Text style={styles.statLabel}>
+            🎬 {item.episodes || '?'} eps
+          </Text>
+          {item.year && (
+            <Text style={styles.statLabel}>
+              📅 {item.year}
+            </Text>
+          )}
+        </View>
+        
+        {item.genres && item.genres.length > 0 && (
+          <View style={styles.genresContainer}>
+            {item.genres.slice(0, 2).map((genre, index) => (
+              <View key={index} style={styles.genreTag}>
+                <Text style={styles.genreText}>{genre.name}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  ), []);
+
+  const renderSkeletonList = useMemo(() => (
+    Array.from({ length: 6 }, (_, index) => (
+      <SkeletonCard key={`skeleton-${index}`} />
+    ))
+  ), []);
+
+  const renderFooter = useCallback(() => {
+    if (!hasNextPage) return null;
+    if (isFetching && allAnime.length > 0) {
+      return <LoadingFooter />;
+    }
+    return null;
+  }, [isFetching, hasNextPage, allAnime.length]);
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'airing':
+      case 'releasing':
+        return '#00D4AA';
+      case 'finished':
+      case 'completed':
+        return '#6C5CE7';
+      case 'not_yet_released':
+      case 'upcoming':
+        return '#FDCB6E';
+      default:
+        return '#74B9FF';
+    }
+  };
+
+  const renderEmptyState = () => {
+    if (error) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.errorEmoji}>😵‍💫</Text>
+          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <Text style={styles.errorText}>Failed to load anime data</Text>
+          <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
+            <LinearGradient
+              colors={['#6C5CE7', '#A29BFE']}
+              style={styles.retryButtonGradient}
+            >
+              <Text style={styles.retryButtonText}>🔄 Try Again</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyEmoji}>🎭</Text>
+        <Text style={styles.emptyTitle}>No anime found</Text>
+        <Text style={styles.emptyText}>Pull down to refresh</Text>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
       
-      {/* Animated Background */}
+      {/* Header */}
       <LinearGradient
-        colors={['#0F0F23', '#1A1A3E', '#2D1B69']}
-        style={StyleSheet.absoluteFillObject}
-      />
-      
-      {/* Floating Orbs Background */}
-      {/* <View style={styles.orbContainer}>
-        <View style={[styles.orb, styles.orb1]} />
-        <View style={[styles.orb, styles.orb2]} />
-        <View style={[styles.orb, styles.orb3]} />
-      </View> */}
-
-      {/* Header with Glassmorphism */}
-      <View style={styles.headerContainer}>
-        <LinearGradient
-          colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
-          style={styles.glassHeader}
-        >
-          <View style={styles.headerContent}>
-            <Text style={styles.headerEmoji}>🎌</Text>
-            <View>
-              <Text style={styles.headerText}>Otaku.Realm</Text>
-              <Text style={styles.subHeaderText}>Epic anime worlds await</Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </View>
-
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        colors={['#0F0F23', 'rgba(15,15,35,0.9)']}
+        style={styles.headerContainer}
       >
-        {/* Popular Anime Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🔥 Popular Anime</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <FlatList
-            data={homeAnimeData}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.listContainer}
-            renderItem={({ item }) => (
-              <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-                <View style={styles.imageContainer}>
-                  <Image source={{ uri: item.image }} style={styles.image} />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.8)']}
-                    style={styles.imageOverlay}
-                  />
-                  <View style={styles.ratingBadge}>
-                    <Text style={styles.ratingText}>⭐ {item.rating}</Text>
-                  </View>
-                </View>
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-                  <View style={styles.cardStats}>
-                    <Text style={styles.statLabel}>🎬 {item.episodes} eps</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
+        <Text style={styles.headerText}>🔥 Trending Anime</Text>
+        <Text style={styles.headerSubtext}>Discover amazing shows</Text>
+      </LinearGradient>
 
-        {/* Top Rated Section */}
-        <View style={styles.topRatedSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🌟 Top Rated</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {homeAnimeData.map((anime, index) => (
-            <TouchableOpacity key={anime.id} activeOpacity={0.9}>
-              <LinearGradient
-                colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)']}
-                style={[styles.topRatedCard, { 
-                  marginTop: index === 0 ? 0 : 16,
-                }]}
-              >
-                <View style={styles.rankContainer}>
-                  <Text style={styles.rankNumber}>#{index + 1}</Text>
-                </View>
-                <View style={styles.topRatedImageContainer}>
-                  <Image source={{ uri: anime.image }} style={styles.topRatedImage} />
-                  <View style={styles.topRatedImageOverlay} />
-                </View>
-                <View style={styles.topRatedInfo}>
-                  <Text style={styles.topRatedTitle} numberOfLines={1}>{anime.title}</Text>
-                  <Text style={styles.topRatedSubtitle}>
-                    {anime.episodes} episodes • {anime.rating}⭐
-                  </Text>
-                  <View style={styles.topRatedStats}>
-                    <View style={styles.scoreIndicator}>
-                      <View style={styles.scoreBar} />
-                      <Text style={styles.scoreText}>Highly Rated</Text>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.chevron}>
-                  <Text style={styles.chevronText}>›</Text>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Footer Banner */}
-        <View style={styles.footerBanner}>
-          <Image
-            source={{ uri: "https://www.wallpaperflare.com/static/966/883/723/anime-universe-wallpaper.jpg" }}
-            style={styles.bannerImage}
-          />
-          <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.9)']}
-            style={styles.bannerOverlay}
-          >
-            <LinearGradient
-              colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-              style={styles.bannerContent}
-            >
-              <Text style={styles.bannerTitle}>Join the Anime Universe</Text>
-              <Text style={styles.bannerSubtitle}>🌌 Discover endless adventures</Text>
-              <TouchableOpacity style={styles.bannerButton}>
-                <Text style={styles.bannerButtonText}>Explore Now</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-          </LinearGradient>
-        </View>
-
-        <View style={{ height: 60 }} />
-      </ScrollView>
+      {/* Content */}
+      {isLoading && allAnime.length === 0 ? (
+        <FlatList
+          data={renderSkeletonList}
+          renderItem={({ item }) => item}
+          keyExtractor={(_, index) => `skeleton-${index}`}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContainer}
+        />
+      ) : allAnime.length === 0 ? (
+        renderEmptyState()
+      ) : (
+        <FlatList
+          data={allAnime}
+          keyExtractor={(item) => `${item.mal_id || item.id}-${item.title || item.title_english || Math.random()}`}
+          renderItem={renderAnimeCard}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContainer}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading && page === 1}
+              onRefresh={onRefresh}
+              colors={['#6C5CE7']}
+              tintColor="#6C5CE7"
+              progressBackgroundColor="#1e1e2f"
+            />
+          }
+        />
+      )}
     </View>
   );
 }
@@ -170,297 +256,198 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F0F23',
   },
-  orbContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  orb: {
-    position: 'absolute',
-    borderRadius: 100,
-    opacity: 0.3,
-  },
-  orb1: {
-    width: 180,
-    height: 180,
-    backgroundColor: '#7F00FF',
-    top: -90,
-    right: -90,
-  },
-  orb2: {
-    width: 140,
-    height: 140,
-    backgroundColor: '#E100FF',
-    top: 180,
-    left: -70,
-  },
-  orb3: {
-    width: 110,
-    height: 110,
-    backgroundColor: '#FF6B6B',
-    bottom: 120,
-    right: -55,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 20,
-  },
   headerContainer: {
-    paddingTop: 60,
     paddingHorizontal: 20,
+    paddingTop: 50,
     paddingBottom: 20,
-  },
-  glassHeader: {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    backdropFilter: 'blur(20px)',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-  },
-  headerEmoji: {
-    fontSize: 32,
-    marginRight: 16,
   },
   headerText: {
+    color: '#FFFFFF',
     fontSize: 28,
     fontWeight: '800',
-    color: '#FFFFFF',
     letterSpacing: -0.5,
   },
-  subHeaderText: {
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
-    fontSize: 14,
+  headerSubtext: {
+    color: '#A0A0B0',
+    fontSize: 16,
+    marginTop: 4,
     fontWeight: '500',
   },
-  section: {
-    marginTop: 32,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  seeAll: {
-    fontSize: 14,
-    color: '#E100FF',
-    fontWeight: '600',
-  },
   listContainer: {
-    paddingLeft: 20,
-    paddingRight: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   card: {
-    width: width * 0.65,
-    marginRight: 16,
+    width: '100%',
+    marginBottom: 20,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#1E1E2F',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   imageContainer: {
+    height: 200,
     position: 'relative',
   },
   image: {
     width: '100%',
-    height: 200,
-    resizeMode: 'cover',
+    height: '100%',
   },
   imageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 60,
+    ...StyleSheet.absoluteFillObject,
   },
   ratingBadge: {
     position: 'absolute',
     top: 12,
     right: 12,
-    backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    backdropFilter: 'blur(10px)',
+    overflow: 'hidden',
   },
   ratingText: {
-    color: '#FFD700',
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   cardContent: {
     padding: 16,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
     color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
     lineHeight: 22,
+    marginBottom: 8,
   },
-  cardStats: {
-    marginTop: 8,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: '500',
-  },
-  topRatedSection: {
-    marginTop: 40,
-    paddingHorizontal: 20,
-  },
-  topRatedCard: {
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    marginBottom: 12,
   },
-  rankContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(225,0,255,0.2)',
+  statLabel: {
+    color: '#A0A0B0',
+    fontSize: 13,
+    fontWeight: '500',
+    marginRight: 16,
+  },
+  genresContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  genreTag: {
+    backgroundColor: 'rgba(108, 92, 231, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  genreText: {
+    color: '#6C5CE7',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  // Skeleton Styles
+  skeletonImageContainer: {
+    height: 200,
+    backgroundColor: '#2A2A3A',
+  },
+  skeletonImage: {
+    flex: 1,
+  },
+  skeletonTextContainer: {
+    padding: 16,
+  },
+  skeletonText: {
+    height: 16,
+    borderRadius: 8,
+  },
+  // Loading Footer
+  loadingFooter: {
+    paddingVertical: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
   },
-  rankNumber: {
+  loadingFooterText: {
+    color: '#A0A0B0',
     fontSize: 14,
-    fontWeight: '700',
-    color: '#E100FF',
+    marginTop: 8,
+    fontWeight: '500',
   },
-  topRatedImageContainer: {
-    position: 'relative',
+  // Empty States
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyEmoji: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: '#A0A0B0',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  errorEmoji: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    color: '#FF6B6B',
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  errorText: {
+    color: '#A0A0B0',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  retryButton: {
     borderRadius: 12,
     overflow: 'hidden',
   },
-  topRatedImage: {
-    width: 80,
-    height: 80,
-    resizeMode: 'cover',
+  retryButtonGradient: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
   },
-  topRatedImageOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  topRatedInfo: {
-    flex: 1,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
-  topRatedTitle: {
+  retryButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  topRatedSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  topRatedStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  scoreIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  scoreBar: {
-    width: 24,
-    height: 3,
-    backgroundColor: '#7F00FF',
-    borderRadius: 2,
-    marginRight: 6,
-  },
-  scoreText: {
-    fontSize: 11,
-    color: '#7F00FF',
-    fontWeight: '600',
-  },
-  chevron: {
-    padding: 8,
-  },
-  chevronText: {
-    fontSize: 20,
-    color: 'rgba(255,255,255,0.3)',
-    fontWeight: '300',
-  },
-  footerBanner: {
-    marginTop: 40,
-    marginHorizontal: 20,
-    height: 200,
-    borderRadius: 20,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  bannerImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  bannerOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    height: '100%',
-    justifyContent: 'flex-end',
-    padding: 20,
-  },
-  bannerContent: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  bannerTitle: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  bannerSubtitle: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 16,
-  },
-  bannerButton: {
-    backgroundColor: 'rgba(225,0,255,0.8)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  bannerButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
 });
