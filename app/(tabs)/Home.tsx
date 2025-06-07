@@ -2,7 +2,7 @@ import { useGetTrendingAnimeQuery } from '@/redux/api';
 import type { Anime } from '@/types/types';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -56,6 +56,13 @@ const LoadingFooter = () => (
   </View>
 );
 
+
+const createUniqueKey = (item: Anime, index: number) => {
+  const id = item.mal_id || `unknown-${index}`;
+  const title = (item.title || item.title_english || `untitled-${index}`).replace(/[^a-zA-Z0-9]/g, '');
+  return `${id}-${title}-${index}`;
+};
+
 export default function HomeScreen() {
   const [page, setPage] = useState(1);
   const [allAnime, setAllAnime] = useState<Anime[]>([]);
@@ -64,7 +71,7 @@ export default function HomeScreen() {
   const { data, error, isLoading, isFetching, refetch } = useGetTrendingAnimeQuery({ page });
 
   // Update anime list when new data arrives
-  React.useEffect(() => {
+  useEffect(() => {
     if (data?.data) {
       if (page === 1) {
         setAllAnime(data.data);
@@ -229,7 +236,7 @@ export default function HomeScreen() {
       ) : (
         <FlatList
           data={allAnime}
-          keyExtractor={(item) => `${item.mal_id || item.id}-${item.title || item.title_english || Math.random()}`}
+          keyExtractor={(item, index) => createUniqueKey(item, index)}
           renderItem={renderAnimeCard}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}
