@@ -1,11 +1,21 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { AniListAnimeResponse, AnimeResponse } from '@/types/types';
-import { convertToAnime, convertPagination } from '@/utils/apiHelpers';
 import { SEARCH_ANIME_QUERY } from '@/lib/queries/searchQueries';
+import { AniListAnimeResponse, AnimeResponse } from '@/types/types';
+import { convertPagination, convertToAnime } from '@/utils/apiHelpers';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export const searchAnimeApi = createApi({
   reducerPath: 'searchAnimeApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api/anilist' }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: 'https://graphql.anilist.co',
+    prepareHeaders: (headers) => {
+      headers.set('Content-Type', 'application/json');
+      headers.set('Accept', 'application/json');
+      if (process.env.ANILIST_TOKEN) {
+        headers.set('Authorization', `Bearer ${process.env.ANILIST_TOKEN}`);
+      }
+      return headers;
+    },
+  }),
   tagTypes: ['SearchAnime'],
   endpoints: (builder) => ({
     searchAnime: builder.query<
@@ -23,7 +33,7 @@ export const searchAnimeApi = createApi({
       query: ({ page, search, genres, year, season, format, airingStatus }) => ({
         url: '',
         method: 'POST',
-        body: {
+        body: JSON.stringify({
           query: SEARCH_ANIME_QUERY,
           variables: {
             page,
@@ -35,19 +45,26 @@ export const searchAnimeApi = createApi({
             format: format?.length ? format : undefined,
             status: airingStatus || undefined,
           },
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
+        }),
       }),
       transformResponse: (response: AniListAnimeResponse) => {
-        const animeList =
-          response.data?.Page?.media
-            ?.filter((anime) => !anime.genres?.includes('Hentai'))
-            .map(convertToAnime) ?? [];
-        const pagination = convertPagination(response.data?.Page?.pageInfo);
-        return animeList.length ? { data: animeList, pagination } : null;
+        if (!response?.data?.Page?.media) {
+          console.error('Invalid API response structure:', response);
+          throw new Error('Invalid API response structure');
+        }
+
+        const animeList = response.data.Page.media
+          .filter((anime) => !anime.genres?.includes('Hentai'))
+          .map(convertToAnime);
+
+        return {
+          data: animeList,
+          pagination: convertPagination(response.data.Page.pageInfo)
+        };
+      },
+      transformErrorResponse: (response) => {
+        console.error('API Error:', response);
+        return response;
       },
       serializeQueryArgs: ({ queryArgs }: { queryArgs: any }) => {
         const normalized = {

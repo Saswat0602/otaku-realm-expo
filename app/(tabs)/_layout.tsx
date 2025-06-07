@@ -201,36 +201,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="test"
-        options={{
-          title: 'Test',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={styles.iconWrapper}>
-              <LinearGradient
-                colors={focused 
-                  ? ['rgba(225,0,255,0.9)', 'rgba(150,0,200,0.8)', 'rgba(100,0,150,0.7)'] 
-                  : ['rgba(255,255,255,0.15)', 'rgba(200,200,255,0.1)', 'rgba(150,150,200,0.05)']
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.iconContainer, focused && styles.iconContainerActive]}
-              >
-                <Ionicons 
-                  name="bug" 
-                  size={26} 
-                  color={focused ? '#fff' : 'rgba(255,255,255,0.7)'} 
-                  style={focused && styles.iconActive}
-                />
-                {focused && (
-                  <View style={styles.glowEffect} />
-                )}
-              </LinearGradient>
-              {focused && <View style={styles.activeIndicator} />}
-            </View>
-          ),
-        }}
-      />
+      
     </Tabs>
   );
 }
