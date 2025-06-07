@@ -1,50 +1,113 @@
-# Welcome to your Expo app 👋
+# Otaku Realm Expo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A modern anime discovery and tracking application built with React Native and Expo, powered by the AniList API.
 
-## Get started
+## Features
 
-1. Install dependencies
+- 🎯 Trending Anime
+- 📺 Seasonal Anime
+- 🔍 Advanced Search
+- 🏆 Top 100 Anime
+- 🎨 Genre-based Browsing
+- 📱 Beautiful UI/UX
+- 🌙 Dark Mode Support
+- 🔄 Real-time Updates
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+- React Native
+- Expo
+- Redux Toolkit
+- TypeScript
+- AniList GraphQL API
+- React Navigation
+- Expo Router
 
-   ```bash
-   npx expo start
-   ```
+## Prerequisites
 
-In the output, you'll find options to open the app in a
+- Node.js (v14 or higher)
+- npm or yarn
+- Expo CLI
+- iOS Simulator (for Mac) or Android Emulator
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Installation
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+1. Clone the repository:
 ```bash
-npm run reset-project
+git clone https://github.com/yourusername/otaku-realm-expo.git
+cd otaku-realm-expo
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
 
-## Learn more
+3. Create a `.env` file in the root directory and add your AniList token:
+```env
+ANILIST_TOKEN=your_anilist_token_here
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+4. Start the development server:
+```bash
+npm start
+# or
+yarn start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+5. Run on your preferred platform:
+```bash
+# For iOS
+npm run ios
+# For Android
+npm run android
+# For web
+npm run web
+```
 
-## Join the community
+## Project Structure
 
-Join our community of developers creating universal apps.
+```
+otaku-realm-expo/
+├── app/                 # Expo Router app directory
+├── assets/             # Static assets (images, fonts)
+├── components/         # Reusable React components
+├── constants/          # App constants and theme
+├── hooks/             # Custom React hooks
+├── lib/               # Library code and API queries
+├── redux/             # Redux store and API slices
+├── types/             # TypeScript type definitions
+└── utils/             # Utility functions
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Environment Variables
+
+The following environment variables are required:
+
+- `ANILIST_TOKEN`: Your AniList API token
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [AniList](https://anilist.co/) for providing the API
+- [Expo](https://expo.dev/) for the amazing development platform
+- [React Native](https://reactnative.dev/) for the framework
+
+## Contact
+
+Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
+
+Project Link: [https://github.com/yourusername/otaku-realm-expo](https://github.com/yourusername/otaku-realm-expo)
