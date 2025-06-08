@@ -3,6 +3,7 @@ import { useTop100AnimeQuery } from '@/redux/api/top100AnimeApi';
 import type { Anime } from '@/types/types';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -69,6 +70,7 @@ export default function Top100Screen() {
   const [hasNextPage, setHasNextPage] = useState(true);
   
   const { data, error, isLoading, isFetching, refetch } = useTop100AnimeQuery({ page });
+  const router = useRouter();
 
   // Update anime list when new data arrives
   useEffect(() => {
@@ -95,7 +97,11 @@ export default function Top100Screen() {
   }, [isFetching, hasNextPage]);
 
   const renderAnimeCard = useCallback(({ item, index }: { item: Anime; index: number }) => (
-    <TouchableOpacity style={styles.card} activeOpacity={0.9}>
+    <TouchableOpacity 
+      style={styles.card} 
+      activeOpacity={0.9}
+      onPress={() => router.push(`/anime/${item.mal_id}`)}
+    >
       <View style={styles.imageContainer}>
         <Image 
           source={{ uri: item.images?.jpg?.large_image_url || '' }} 
@@ -149,7 +155,7 @@ export default function Top100Screen() {
         )}
       </View>
     </TouchableOpacity>
-  ), []);
+  ), [router]);
 
   const renderSkeletonList = useMemo(() => (
     Array.from({ length: 6 }, (_, index) => (

@@ -5,6 +5,7 @@ import { RootState } from '@/redux/store';
 import type { Anime } from '@/types/types';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -74,6 +75,8 @@ export default function UpcomingScreen() {
   
   const { searchQuery } = useSelector((state: RootState) => state.filter);
   
+  const router = useRouter();
+  
   const { data: upcomingData, error: upcomingError, isLoading: isUpcomingLoading, isFetching: isUpcomingFetching, refetch: refetchUpcoming } = useUpcomingAnimeQuery(page);
   const { data: searchData, error: searchError, isLoading: isSearchLoading, isFetching: isSearchFetching } = useSearchAnimeQuery(
     { 
@@ -123,7 +126,11 @@ export default function UpcomingScreen() {
   }, [isSearchFetching, isUpcomingFetching, hasNextPage]);
 
   const renderAnimeCard = useCallback(({ item }: { item: Anime }) => (
-    <TouchableOpacity style={styles.card} activeOpacity={0.9}>
+    <TouchableOpacity 
+      style={styles.card} 
+      activeOpacity={0.9}
+      onPress={() => router.push(`/anime/${item.mal_id}`)}
+    >
       <View style={styles.imageContainer}>
         <Image 
           source={{ uri: item.images?.jpg?.large_image_url || '' }} 
@@ -177,7 +184,7 @@ export default function UpcomingScreen() {
         )}
       </View>
     </TouchableOpacity>
-  ), []);
+  ), [router]);
 
   const renderSkeletonList = useMemo(() => (
     Array.from({ length: 6 }, (_, index) => (

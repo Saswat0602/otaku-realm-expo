@@ -5,6 +5,7 @@ import { RootState } from '@/redux/store';
 import type { Anime } from '@/types/types';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -77,6 +78,7 @@ const createUniqueKey = (item: Anime, index: number) => {
 };
 
 export default function SeasonalAnimeScreen() {
+  const router = useRouter();
   const { year, season } = getCurrentSeasonAndYear();
   const [page, setPage] = useState(1);
   const [allAnime, setAllAnime] = useState<Anime[]>([]);
@@ -134,7 +136,11 @@ export default function SeasonalAnimeScreen() {
   }, [isSearchFetching, isSeasonalFetching, hasNextPage]);
 
   const renderAnimeCard = useCallback(({ item }: { item: Anime }) => (
-    <TouchableOpacity style={styles.card} activeOpacity={0.9}>
+    <TouchableOpacity 
+      style={styles.card} 
+      activeOpacity={0.9}
+      onPress={() => router.push(`/anime/${item.mal_id}`)}
+    >
       <View style={styles.imageContainer}>
         <Image 
           source={{ uri: item.images?.jpg?.large_image_url || '' }} 
@@ -171,7 +177,7 @@ export default function SeasonalAnimeScreen() {
         )}
       </View>
     </TouchableOpacity>
-  ), []);
+  ), [router]);
 
   const renderSkeletonList = useMemo(() => (
     Array.from({ length: 6 }, (_, index) => (
