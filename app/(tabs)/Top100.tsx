@@ -1,275 +1,443 @@
-import animeTop from '@/data/top100';
+import { useTop100AnimeQuery } from '@/redux/api/top100AnimeApi';
+import type { Anime } from '@/types/types';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Image,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    RefreshControl,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
-const Top100 = () => {
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      
-      {/* Animated Background */}
+const { width } = Dimensions.get('window');
+
+// Skeleton Card Component
+const SkeletonCard = () => (
+  <View style={styles.card}>
+    <View style={styles.skeletonImageContainer}>
       <LinearGradient
-        colors={['#0F0F23', '#1A1A3E', '#2D1B69']}
-        style={StyleSheet.absoluteFillObject}
+        colors={['#2a2a3a', '#3a3a4a', '#2a2a3a']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.skeletonImage}
       />
-
-      {/* Header with Glassmorphism */}
-      <View style={styles.headerContainer}>
-        <LinearGradient
-          colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
-          style={styles.glassHeader}
-        >
-          <View style={styles.headerContent}>
-            <Text style={styles.headerEmoji}>🏆</Text>
-            <View>
-              <Text style={styles.headerText}>Top 100 Anime</Text>
-              <Text style={styles.subText}>All Time Greatest</Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </View>
-
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.listWrapper}>
-          {animeTop.map((anime, index) => (
-            <TouchableOpacity key={anime.id} activeOpacity={0.9}>
-              <LinearGradient
-                colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)']}
-                style={styles.card}
-              >
-                <View style={styles.rankContainer}>
-                  <LinearGradient
-                    colors={index < 3 ? ['#FFD700', '#FFA500'] : ['#667eea', '#764ba2']}
-                    style={styles.rankBadge}
-                  >
-                    <Text style={styles.rankNumber}>#{index + 1}</Text>
-                  </LinearGradient>
-                </View>
-                
-                <View style={styles.imageContainer}>
-                  <Image source={{ uri: anime.image }} style={styles.image} />
-                  <View style={styles.imageOverlay} />
-                  {index < 10 && (
-                    <View style={styles.topBadge}>
-                      <Text style={styles.topText}>🏆 TOP</Text>
-                    </View>
-                  )}
-                </View>
-                
-                <View style={styles.textWrapper}>
-                  <Text style={styles.title} numberOfLines={2}>{anime.title}</Text>
-                  <Text style={styles.genre}>{anime.genre}</Text>
-                  <View style={styles.statsContainer}>
-                    <View style={styles.ratingContainer}>
-                      <Text style={styles.rating}>⭐ {anime.rating}</Text>
-                    </View>
-                    <View style={styles.legendIndicator}>
-                      <View style={styles.legendBar} />
-                      <Text style={styles.legendText}>Legend</Text>
-                    </View>
-                  </View>
-                </View>
-                
-                <View style={styles.chevron}>
-                  <Text style={styles.chevronText}>›</Text>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          ))}
-        </View>
-        
-        <View style={{ height: 60 }} />
-      </ScrollView>
     </View>
-  );
+    <View style={styles.cardContent}>
+      <View style={styles.skeletonTextContainer}>
+        <LinearGradient
+          colors={['#2a2a3a', '#3a3a4a', '#2a2a3a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.skeletonText, { width: '80%' }]}
+        />
+        <LinearGradient
+          colors={['#2a2a3a', '#3a3a4a', '#2a2a3a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.skeletonText, { width: '60%', marginTop: 8 }]}
+        />
+      </View>
+    </View>
+  </View>
+);
+
+// Loading Footer Component
+const LoadingFooter = () => (
+  <View style={styles.loadingFooter}>
+    <ActivityIndicator size="large" color="#6C5CE7" />
+    <Text style={styles.loadingFooterText}>Loading more anime...</Text>
+  </View>
+);
+
+const createUniqueKey = (item: Anime, index: number) => {
+  const id = item.mal_id || `unknown-${index}`;
+  const title = (item.title || item.title_english || `untitled-${index}`).replace(/[^a-zA-Z0-9]/g, '');
+  return `${id}-${title}-${index}`;
 };
 
-export default Top100;
+export default function Top100Screen() {
+  const [page, setPage] = useState(1);
+  const [allAnime, setAllAnime] = useState<Anime[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  
+  const { data, error, isLoading, isFetching, refetch } = useTop100AnimeQuery({ page });
+
+  // Update anime list when new data arrives
+  useEffect(() => {
+    if (data?.data) {
+      if (page === 1) {
+        setAllAnime(data.data);
+      } else {
+        setAllAnime(prev => [...prev, ...data.data]);
+      }
+      setHasNextPage(data.pagination.has_next_page || false);
+    }
+  }, [data, page]);
+
+  const onRefresh = useCallback(() => {
+    setPage(1);
+    setAllAnime([]);
+    refetch();
+  }, [refetch]);
+
+  const loadMore = useCallback(() => {
+    if (!isFetching && hasNextPage) {
+      setPage(prev => prev + 1);
+    }
+  }, [isFetching, hasNextPage]);
+
+  const renderAnimeCard = useCallback(({ item, index }: { item: Anime; index: number }) => (
+    <TouchableOpacity style={styles.card} activeOpacity={0.9}>
+      <View style={styles.imageContainer}>
+        <Image 
+          source={{ uri: item.images?.jpg?.large_image_url || '' }} 
+          style={styles.image} 
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.9)']}
+          style={styles.imageOverlay}
+        />
+        
+        {/* Rank Badge */}
+        <BlurView intensity={20} tint="dark" style={styles.rankBadge}>
+          <Text style={styles.rankText}>
+            #{index + 1}
+          </Text>
+        </BlurView>
+
+        {/* Rating Badge */}
+        <BlurView intensity={20} tint="dark" style={styles.ratingBadge}>
+          <Text style={styles.ratingText}>
+            ⭐ {item.score || item.rating || 'N/A'}
+          </Text>
+        </BlurView>
+      </View>
+      
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {item.title || item.title_english}
+        </Text>
+        
+        <View style={styles.statsRow}>
+          <Text style={styles.statLabel}>
+            🎬 {item.episodes || '?'} eps
+          </Text>
+          {item.year && (
+            <Text style={styles.statLabel}>
+              📅 {item.year}
+            </Text>
+          )}
+        </View>
+        
+        {item.genres && item.genres.length > 0 && (
+          <View style={styles.genresContainer}>
+            {item.genres.slice(0, 2).map((genre, index) => (
+              <View key={index} style={styles.genreTag}>
+                <Text style={styles.genreText}>{genre.name}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  ), []);
+
+  const renderSkeletonList = useMemo(() => (
+    Array.from({ length: 6 }, (_, index) => (
+      <SkeletonCard key={`skeleton-${index}`} />
+    ))
+  ), []);
+
+  const renderFooter = useCallback(() => {
+    if (!hasNextPage) return null;
+    if (isFetching && allAnime.length > 0) {
+      return <LoadingFooter />;
+    }
+    return null;
+  }, [isFetching, hasNextPage, allAnime.length]);
+
+  const renderEmptyState = () => {
+    if (error) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.errorEmoji}>😵‍💫</Text>
+          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <Text style={styles.errorText}>Failed to load anime data</Text>
+          <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
+            <LinearGradient
+              colors={['#6C5CE7', '#A29BFE']}
+              style={styles.retryButtonGradient}
+            >
+              <Text style={styles.retryButtonText}>🔄 Try Again</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyEmoji}>🎭</Text>
+        <Text style={styles.emptyTitle}>No anime found</Text>
+        <Text style={styles.emptyText}>Pull down to refresh</Text>
+      </View>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+      
+      {/* Header */}
+      <LinearGradient
+        colors={['#0F0F23', 'rgba(15,15,35,0.9)']}
+        style={styles.headerContainer}
+      >
+        <Text style={styles.headerText}>🏆 Top 100 Anime</Text>
+        <Text style={styles.headerSubtext}>All Time Greatest</Text>
+      </LinearGradient>
+
+      {/* Content */}
+      {isLoading && allAnime.length === 0 ? (
+        <FlatList
+          data={renderSkeletonList}
+          renderItem={({ item }) => item}
+          keyExtractor={(_, index) => `skeleton-${index}`}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContainer}
+        />
+      ) : allAnime.length === 0 ? (
+        renderEmptyState()
+      ) : (
+        <FlatList
+          data={allAnime}
+          keyExtractor={(item, index) => createUniqueKey(item, index)}
+          renderItem={renderAnimeCard}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContainer}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading && page === 1}
+              onRefresh={onRefresh}
+              colors={['#6C5CE7']}
+              tintColor="#6C5CE7"
+              progressBackgroundColor="#1e1e2f"
+            />
+          }
+        />
+      )}
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0F0F23',
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 20,
-  },
   headerContainer: {
-    paddingTop: 60,
     paddingHorizontal: 20,
+    paddingTop: 50,
     paddingBottom: 20,
-  },
-  glassHeader: {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    backdropFilter: 'blur(20px)',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-  },
-  headerEmoji: {
-    fontSize: 32,
-    marginRight: 16,
   },
   headerText: {
+    color: '#FFFFFF',
     fontSize: 28,
     fontWeight: '800',
-    color: '#FFFFFF',
     letterSpacing: -0.5,
   },
-  subText: {
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
-    fontSize: 14,
+  headerSubtext: {
+    color: '#A0A0B0',
+    fontSize: 16,
+    marginTop: 4,
     fontWeight: '500',
   },
-  listWrapper: {
-    paddingHorizontal: 20,
-    paddingTop: 32,
+  listContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    width: '100%',
+    marginBottom: 20,
     borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
     overflow: 'hidden',
-  },
-  rankContainer: {
-    marginRight: 16,
-  },
-  rankBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
+    backgroundColor: '#1E1E2F',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  rankNumber: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    shadowRadius: 12,
+    elevation: 8,
   },
   imageContainer: {
+    height: 200,
     position: 'relative',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginRight: 16,
   },
   image: {
-    width: 100,
-    height: 120,
-    resizeMode: 'cover',
+    width: '100%',
+    height: '100%',
   },
   imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  rankBadge: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.15)',
-  },
-  topBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(255,215,0,0.9)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    backdropFilter: 'blur(10px)',
-  },
-  topText: {
-    color: '#000000',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  textWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    lineHeight: 24,
-    marginBottom: 4,
-  },
-  genre: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: 12,
-    fontWeight: '500',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  ratingContainer: {
-    backgroundColor: 'rgba(255,215,0,0.15)',
+    top: 12,
+    left: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.2)',
+    overflow: 'hidden',
   },
-  rating: {
+  rankText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  ratingText: {
+    color: '#FFFFFF',
     fontSize: 12,
-    color: '#FFD700',
     fontWeight: '600',
   },
-  legendIndicator: {
+  cardContent: {
+    padding: 16,
+  },
+  cardTitle: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
   },
-  legendBar: {
-    width: 20,
-    height: 3,
-    backgroundColor: '#667eea',
-    borderRadius: 2,
-    marginRight: 6,
+  statLabel: {
+    color: '#A0A0B0',
+    fontSize: 13,
+    fontWeight: '500',
+    marginRight: 16,
   },
-  legendText: {
+  genresContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  genreTag: {
+    backgroundColor: 'rgba(108, 92, 231, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  genreText: {
+    color: '#6C5CE7',
     fontSize: 11,
-    color: '#667eea',
     fontWeight: '600',
   },
-  chevron: {
-    padding: 8,
-    marginLeft: 8,
+  // Skeleton Styles
+  skeletonImageContainer: {
+    height: 200,
+    backgroundColor: '#2A2A3A',
   },
-  chevronText: {
+  skeletonImage: {
+    flex: 1,
+  },
+  skeletonTextContainer: {
+    padding: 16,
+  },
+  skeletonText: {
+    height: 16,
+    borderRadius: 8,
+  },
+  // Loading Footer
+  loadingFooter: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadingFooterText: {
+    color: '#A0A0B0',
+    fontSize: 14,
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  // Empty States
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyEmoji: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    color: '#FFFFFF',
     fontSize: 20,
-    color: 'rgba(255,255,255,0.3)',
-    fontWeight: '300',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: '#A0A0B0',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  errorEmoji: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    color: '#FF6B6B',
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  errorText: {
+    color: '#A0A0B0',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  retryButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  retryButtonGradient: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
