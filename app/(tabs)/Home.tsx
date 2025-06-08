@@ -1,20 +1,23 @@
-import { useGetTrendingAnimeQuery } from '@/redux/api';
-import type { Anime } from '@/types/types';
+import SearchBar from '@/components/SearchBar';
+import { useGetTrendingAnimeQuery, useSearchAnimeQuery } from '@/redux/api';
+import { RootState } from '@/redux/store';
+import type { Anime, Pagination } from '@/types/types';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  Image,
-  RefreshControl,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    RefreshControl,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { useSelector } from 'react-redux';
 
 const { width } = Dimensions.get('window');
 
@@ -67,32 +70,66 @@ export default function HomeScreen() {
   const [page, setPage] = useState(1);
   const [allAnime, setAllAnime] = useState<Anime[]>([]);
   const [hasNextPage, setHasNextPage] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   
-  const { data, error, isLoading, isFetching, refetch } = useGetTrendingAnimeQuery({ page });
+  const { searchQuery } = useSelector((state: RootState) => state.filter);
+  
+  const { data: trendingData, error: trendingError, isLoading: isTrendingLoading, isFetching: isTrendingFetching, refetch: refetchTrending } = useGetTrendingAnimeQuery({ page });
+  const { data: searchData, error: searchError, isLoading: isSearchLoading, isFetching: isSearchFetching } = useSearchAnimeQuery(
+    { 
+      page,
+      search: searchQuery,
+      genres: undefined,
+      year: undefined,
+      season: undefined,
+      format: undefined,
+      airingStatus: undefined
+    },
+    { skip: !searchQuery }
+  );
 
   // Update anime list when new data arrives
   useEffect(() => {
+    const data = searchQuery ? searchData : trendingData;
+    const error = searchQuery ? searchError : trendingError;
+    const isLoading = searchQuery ? isSearchLoading : isTrendingLoading;
+    const isFetching = searchQuery ? isSearchFetching : isTrendingFetching;
+
     if (data?.data) {
       if (page === 1) {
         setAllAnime(data.data);
       } else {
         setAllAnime(prev => [...prev, ...data.data]);
       }
-      setHasNextPage(data.pagination?.hasNextPage || false);
+      // Handle both pagination structures
+      if (searchQuery) {
+        // Search API uses the Pagination interface
+        const pagination = data.pagination as Pagination;
+        setHasNextPage(pagination?.has_next_page || false);
+      } else {
+        // Trending API uses a simple object with hasNextPage
+        const pagination = data.pagination as { hasNextPage: boolean };
+        setHasNextPage(pagination?.hasNextPage || false);
+      }
     }
-  }, [data, page]);
+  }, [searchData, trendingData, page, searchQuery]);
 
   const onRefresh = useCallback(() => {
     setPage(1);
     setAllAnime([]);
-    refetch();
-  }, [refetch]);
+    if (searchQuery) {
+      // Trigger search refetch
+      setIsSearching(true);
+    } else {
+      refetchTrending();
+    }
+  }, [refetchTrending, searchQuery]);
 
   const loadMore = useCallback(() => {
-    if (!isFetching && hasNextPage) {
+    if (!isSearchFetching && !isTrendingFetching && hasNextPage) {
       setPage(prev => prev + 1);
     }
-  }, [isFetching, hasNextPage]);
+  }, [isSearchFetching, isTrendingFetching, hasNextPage]);
 
   const renderAnimeCard = useCallback(({ item }: { item: Anime }) => (
     <TouchableOpacity style={styles.card} activeOpacity={0.9}>
@@ -159,11 +196,11 @@ export default function HomeScreen() {
 
   const renderFooter = useCallback(() => {
     if (!hasNextPage) return null;
-    if (isFetching && allAnime.length > 0) {
+    if (isSearchFetching || isTrendingFetching && allAnime.length > 0) {
       return <LoadingFooter />;
     }
     return null;
-  }, [isFetching, hasNextPage, allAnime.length]);
+  }, [isSearchFetching, isTrendingFetching, hasNextPage, allAnime.length]);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -182,7 +219,7 @@ export default function HomeScreen() {
   };
 
   const renderEmptyState = () => {
-    if (error) {
+    if (searchError || trendingError) {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.errorEmoji}>😵‍💫</Text>
@@ -222,8 +259,18 @@ export default function HomeScreen() {
         <Text style={styles.headerSubtext}>Discover amazing shows</Text>
       </LinearGradient>
 
+      {/* Search Bar */}
+      <SearchBar 
+        placeholder="Search anime..."
+        onSearch={() => {
+          setPage(1);
+          setAllAnime([]);
+          setIsSearching(true);
+        }}
+      />
+
       {/* Content */}
-      {isLoading && allAnime.length === 0 ? (
+      {(isTrendingLoading || isSearchLoading) && allAnime.length === 0 ? (
         <FlatList
           data={renderSkeletonList}
           renderItem={({ item }) => item}
@@ -245,7 +292,7 @@ export default function HomeScreen() {
           ListFooterComponent={renderFooter}
           refreshControl={
             <RefreshControl
-              refreshing={isLoading && page === 1}
+              refreshing={(isTrendingLoading || isSearchLoading) && page === 1}
               onRefresh={onRefresh}
               colors={['#6C5CE7']}
               tintColor="#6C5CE7"

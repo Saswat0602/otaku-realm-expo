@@ -3,15 +3,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  ImageBackground,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Animated,
+    Dimensions,
+    ImageBackground,
+    KeyboardAvoidingView,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -54,7 +56,10 @@ export default function IndexScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.container}
+        >
             <StatusBar barStyle="light-content" backgroundColor="#000000" />
             <ImageBackground
                 source={require('../assets/images/heroImage.webp')}
@@ -192,7 +197,7 @@ export default function IndexScreen() {
                     </View>
                 </Animated.View>
             </ImageBackground>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

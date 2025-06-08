@@ -1,5 +1,7 @@
 import CustomHeader from '@/components/CustomHeader';
-import { useUpcomingAnimeQuery } from '@/redux/api/upcomingAnimeApi';
+import SearchBar from '@/components/SearchBar';
+import { useSearchAnimeQuery, useUpcomingAnimeQuery } from '@/redux/api';
+import { RootState } from '@/redux/store';
 import type { Anime } from '@/types/types';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +18,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useSelector } from 'react-redux';
 
 const { width } = Dimensions.get('window');
 
@@ -67,32 +70,57 @@ export default function UpcomingScreen() {
   const [page, setPage] = useState(1);
   const [allAnime, setAllAnime] = useState<Anime[]>([]);
   const [hasNextPage, setHasNextPage] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   
-  const { data, error, isLoading, isFetching, refetch } = useUpcomingAnimeQuery(page);
+  const { searchQuery } = useSelector((state: RootState) => state.filter);
+  
+  const { data: upcomingData, error: upcomingError, isLoading: isUpcomingLoading, isFetching: isUpcomingFetching, refetch: refetchUpcoming } = useUpcomingAnimeQuery(page);
+  const { data: searchData, error: searchError, isLoading: isSearchLoading, isFetching: isSearchFetching } = useSearchAnimeQuery(
+    { 
+      page,
+      search: searchQuery,
+      genres: undefined,
+      year: undefined,
+      season: undefined,
+      format: undefined,
+      airingStatus: undefined
+    },
+    { skip: !searchQuery }
+  );
 
   // Update anime list when new data arrives
   useEffect(() => {
+    const data = searchQuery ? searchData : upcomingData;
+    const error = searchQuery ? searchError : upcomingError;
+    const isLoading = searchQuery ? isSearchLoading : isUpcomingLoading;
+    const isFetching = searchQuery ? isSearchFetching : isUpcomingFetching;
+
     if (data?.data) {
       if (page === 1) {
         setAllAnime(data.data);
       } else {
         setAllAnime(prev => [...prev, ...data.data]);
       }
-      setHasNextPage(data.pagination.has_next_page || false);
+      setHasNextPage(data.pagination?.has_next_page || false);
     }
-  }, [data, page]);
+  }, [searchData, upcomingData, page, searchQuery]);
 
   const onRefresh = useCallback(() => {
     setPage(1);
     setAllAnime([]);
-    refetch();
-  }, [refetch]);
+    if (searchQuery) {
+      // Trigger search refetch
+      setIsSearching(true);
+    } else {
+      refetchUpcoming();
+    }
+  }, [refetchUpcoming, searchQuery]);
 
   const loadMore = useCallback(() => {
-    if (!isFetching && hasNextPage) {
+    if (!isSearchFetching && !isUpcomingFetching && hasNextPage) {
       setPage(prev => prev + 1);
     }
-  }, [isFetching, hasNextPage]);
+  }, [isSearchFetching, isUpcomingFetching, hasNextPage]);
 
   const renderAnimeCard = useCallback(({ item }: { item: Anime }) => (
     <TouchableOpacity style={styles.card} activeOpacity={0.9}>
@@ -159,14 +187,14 @@ export default function UpcomingScreen() {
 
   const renderFooter = useCallback(() => {
     if (!hasNextPage) return null;
-    if (isFetching && allAnime.length > 0) {
+    if (isSearchFetching || isUpcomingFetching && allAnime.length > 0) {
       return <LoadingFooter />;
     }
     return null;
-  }, [isFetching, hasNextPage, allAnime.length]);
+  }, [isSearchFetching, isUpcomingFetching, hasNextPage, allAnime.length]);
 
   const renderEmptyState = () => {
-    if (error) {
+    if (searchError || upcomingError) {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.errorEmoji}>😵‍💫</Text>
@@ -198,10 +226,12 @@ export default function UpcomingScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
       <CustomHeader 
         title="Upcoming Anime" 
-        subtitle="Coming soon to your screens"
+        subtitle="Not Yet Aired"
       />
+      <SearchBar placeholder="Search anime..." />
+
       {/* Content */}
-      {isLoading && allAnime.length === 0 ? (
+      {(isUpcomingLoading || isSearchLoading) && allAnime.length === 0 ? (
         <FlatList
           data={renderSkeletonList}
           renderItem={({ item }) => item}
@@ -223,7 +253,7 @@ export default function UpcomingScreen() {
           ListFooterComponent={renderFooter}
           refreshControl={
             <RefreshControl
-              refreshing={isLoading && page === 1}
+              refreshing={(isUpcomingLoading || isSearchLoading) && page === 1}
               onRefresh={onRefresh}
               colors={['#6C5CE7']}
               tintColor="#6C5CE7"

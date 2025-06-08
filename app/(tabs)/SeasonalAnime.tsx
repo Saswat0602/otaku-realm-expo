@@ -1,5 +1,7 @@
 import CustomHeader from '@/components/CustomHeader';
-import { useSeasonalAnimeQuery } from '@/redux/api/animeApi';
+import SearchBar from '@/components/SearchBar';
+import { useSearchAnimeQuery, useSeasonalAnimeQuery } from '@/redux/api';
+import { RootState } from '@/redux/store';
 import type { Anime } from '@/types/types';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +18,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useSelector } from 'react-redux';
 
 const { width } = Dimensions.get('window');
 
@@ -78,31 +81,57 @@ export default function SeasonalAnimeScreen() {
   const [page, setPage] = useState(1);
   const [allAnime, setAllAnime] = useState<Anime[]>([]);
   const [hasNextPage, setHasNextPage] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  const { searchQuery } = useSelector((state: RootState) => state.filter);
+  
+  const { data: seasonalData, error: seasonalError, isLoading: isSeasonalLoading, isFetching: isSeasonalFetching, refetch: refetchSeasonal } = useSeasonalAnimeQuery({ year, season, page });
+  const { data: searchData, error: searchError, isLoading: isSearchLoading, isFetching: isSearchFetching } = useSearchAnimeQuery(
+    { 
+      page,
+      search: searchQuery,
+      genres: undefined,
+      year: undefined,
+      season: undefined,
+      format: undefined,
+      airingStatus: undefined
+    },
+    { skip: !searchQuery }
+  );
 
-  const { data, error, isLoading, isFetching, refetch } = useSeasonalAnimeQuery({ year, season, page });
-
+  // Update anime list when new data arrives
   useEffect(() => {
+    const data = searchQuery ? searchData : seasonalData;
+    const error = searchQuery ? searchError : seasonalError;
+    const isLoading = searchQuery ? isSearchLoading : isSeasonalLoading;
+    const isFetching = searchQuery ? isSearchFetching : isSeasonalFetching;
+
     if (data?.data) {
       if (page === 1) {
         setAllAnime(data.data);
       } else {
         setAllAnime(prev => [...prev, ...data.data]);
       }
-      setHasNextPage(data.pagination.has_next_page || false);
+      setHasNextPage(data.pagination?.hasNextPage || false);
     }
-  }, [data, page]);
+  }, [searchData, seasonalData, page, searchQuery]);
 
   const onRefresh = useCallback(() => {
     setPage(1);
     setAllAnime([]);
-    refetch();
-  }, [refetch]);
+    if (searchQuery) {
+      // Trigger search refetch
+      setIsSearching(true);
+    } else {
+      refetchSeasonal();
+    }
+  }, [refetchSeasonal, searchQuery]);
 
   const loadMore = useCallback(() => {
-    if (!isFetching && hasNextPage) {
+    if (!isSearchFetching && !isSeasonalFetching && hasNextPage) {
       setPage(prev => prev + 1);
     }
-  }, [isFetching, hasNextPage]);
+  }, [isSearchFetching, isSeasonalFetching, hasNextPage]);
 
   const renderAnimeCard = useCallback(({ item }: { item: Anime }) => (
     <TouchableOpacity style={styles.card} activeOpacity={0.9}>
@@ -152,14 +181,14 @@ export default function SeasonalAnimeScreen() {
 
   const renderFooter = useCallback(() => {
     if (!hasNextPage) return null;
-    if (isFetching && allAnime.length > 0) {
+    if (isSearchFetching || isSeasonalFetching) {
       return <LoadingFooter />;
     }
     return null;
-  }, [isFetching, hasNextPage, allAnime.length]);
+  }, [isSearchFetching, isSeasonalFetching, hasNextPage]);
 
   const renderEmptyState = () => {
-    if (error) {
+    if (searchError || seasonalError) {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.errorEmoji}>😵‍💫</Text>
@@ -192,8 +221,10 @@ export default function SeasonalAnimeScreen() {
         title="Seasonal Anime" 
         subtitle={`${season.charAt(0).toUpperCase() + season.slice(1)} ${year}`}
       />
+      <SearchBar placeholder="Search anime..." />
+
       {/* Content */}
-      {isLoading && allAnime.length === 0 ? (
+      {(isSeasonalLoading || isSearchLoading) && allAnime.length === 0 ? (
         <FlatList
           data={renderSkeletonList}
           renderItem={({ item }) => item}
@@ -215,7 +246,7 @@ export default function SeasonalAnimeScreen() {
           ListFooterComponent={renderFooter}
           refreshControl={
             <RefreshControl
-              refreshing={isLoading && page === 1}
+              refreshing={(isSeasonalLoading || isSearchLoading) && page === 1}
               onRefresh={onRefresh}
               colors={['#6C5CE7']}
               tintColor="#6C5CE7"
