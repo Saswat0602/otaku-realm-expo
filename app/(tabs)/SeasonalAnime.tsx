@@ -1,3 +1,4 @@
+import CustomHeader from '@/components/CustomHeader';
 import { useSeasonalAnimeQuery } from '@/redux/api/animeApi';
 import type { Anime } from '@/types/types';
 import { BlurView } from 'expo-blur';
@@ -187,14 +188,10 @@ export default function SeasonalAnimeScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-      {/* Header */}
-      <LinearGradient
-        colors={['#0F0F23', 'rgba(15,15,35,0.9)']}
-        style={styles.headerContainer}
-      >
-        <Text style={styles.headerText}>🌸 Seasonal Anime</Text>
-        <Text style={styles.headerSubtext}>{season.charAt(0).toUpperCase() + season.slice(1)} {year}</Text>
-      </LinearGradient>
+      <CustomHeader 
+        title="Seasonal Anime" 
+        subtitle={`${season.charAt(0).toUpperCase() + season.slice(1)} ${year}`}
+      />
       {/* Content */}
       {isLoading && allAnime.length === 0 ? (
         <FlatList
@@ -235,23 +232,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0F0F23',
-  },
-  headerContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
-  },
-  headerText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  headerSubtext: {
-    color: '#A0A0B0',
-    fontSize: 16,
-    marginTop: 4,
-    fontWeight: '500',
   },
   listContainer: {
     paddingHorizontal: 16,
