@@ -236,6 +236,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingHorizontal: 16,
     paddingBottom: 20,
+    paddingTop: 120,
   },
   card: {
     width: '100%',
