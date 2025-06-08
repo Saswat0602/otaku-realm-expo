@@ -112,9 +112,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="Popular"
+        name="SeasonalAnime"
         options={{
-          title: 'Popular',
+          title: 'SeasonalAnime',
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.iconWrapper}>
               <LinearGradient
@@ -142,9 +142,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="Trending"
+        name="Upcoming"
         options={{
-          title: 'Trending',
+          title: 'Upcoming',
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.iconWrapper}>
               <LinearGradient
