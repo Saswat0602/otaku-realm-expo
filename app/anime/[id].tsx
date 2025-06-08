@@ -2,6 +2,7 @@ import AnimeCharacters from '@/components/anime-details/AnimeCharacters';
 import AnimeDescription from '@/components/anime-details/AnimeDescription';
 import AnimeHeader from '@/components/anime-details/AnimeHeader';
 import AnimeInfo from '@/components/anime-details/AnimeInfo';
+import AnimeStatics from '@/components/anime-details/AnimeStatics';
 import AnimeStats from '@/components/anime-details/AnimeStats';
 import ErrorMessage from '@/components/common/ErrorMessage';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -39,6 +40,7 @@ export default function AnimeDetailsScreen() {
             <AnimeDescription description={anime.description} />
             <AnimeStats anime={anime} />
             <AnimeCharacters characters={anime.characters.edges} />
+            <AnimeStatics stats={anime.stats}/>
           </View>
         </LinearGradient>
       </ScrollView>
