@@ -2,7 +2,7 @@
   "expo": {
     "name": "otaku-realm-expo",
     "slug": "otaku-realm-expo",
-    "version": "1.0.3",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/zoro.png",
     "scheme": "otakurealmexpo",
